@@ -1,0 +1,21 @@
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: #1a1a1a;
+  color: #f2f2f2;
+  font-family: "Consolas", sans-serif;
+}
+
+canvas {
+  display: block;
+  margin: 20px auto;
+}
+
+.instruction {
+  text-align: center;
+  font-size: 30px;
+}
