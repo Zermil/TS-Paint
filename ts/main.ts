@@ -42,11 +42,11 @@ function update_queue() {
   // It's fine for a small toy/learning example like this.
   if (global_state.brush_color !== brushes.erase) {
     const index = global_state.queue.findIndex((element) => {
-      return(element.pos.x === global_state.mouse_pos.x 
+      return (element.pos.x === global_state.mouse_pos.x
         && element.pos.y === global_state.mouse_pos.y);
     });
 
-    if (index !== -1) { 
+    if (index !== -1) {
       global_state.queue[index].color = global_state.brush_color;
       return;
     }
@@ -56,17 +56,36 @@ function update_queue() {
       color: global_state.brush_color
     });
   } else {
-    global_state.queue = global_state.queue.filter((element) => { 
-      return(element.pos.x !== global_state.mouse_pos.x 
+    global_state.queue = global_state.queue.filter((element) => {
+      return (element.pos.x !== global_state.mouse_pos.x
         || element.pos.y !== global_state.mouse_pos.y);
     });
   }
 }
 
-function render_board(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D): void {
-  function frame() {
-    const colors = ["#828282", "#C5D6D8"];
+function prepare_and_render_board(): void {
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const colors = ["#828282", "#C5D6D8"];
 
+  canvas.addEventListener("mousemove", function (e: MouseEvent): void {
+    const bounding = this.getBoundingClientRect();
+
+    global_state.mouse_pos = {
+      x: Math.floor((e.clientX - bounding.left) / global_state.res.x),
+      y: Math.floor((e.clientY - bounding.top) / global_state.res.y)
+    };
+
+    if (global_state.mouse_down) {
+      update_queue();
+    }
+  });
+
+  canvas.addEventListener("click", function (): void {
+    update_queue();
+  });
+
+  function frame() {
     for (let i = 0; i < canvas.height / global_state.res.x; ++i) {
       for (let j = 0; j < canvas.width / global_state.res.y; ++j) {
         context.fillStyle = colors[(j + i) & 1];
@@ -91,27 +110,7 @@ function render_board(canvas: HTMLCanvasElement, context: CanvasRenderingContext
 }
 
 window.onload = function (): void {
-  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-  render_board(canvas, context);
-
-  canvas.addEventListener("mousemove", function (e: MouseEvent): void {
-    const bounding = this.getBoundingClientRect();
-
-    global_state.mouse_pos = {
-      x: Math.floor((e.clientX - bounding.left) / global_state.res.x),
-      y: Math.floor((e.clientY - bounding.top) / global_state.res.y)
-    };
-
-    if (global_state.mouse_down) {
-      update_queue();
-    }
-  });
-
-  canvas.addEventListener("click", function (): void {
-    update_queue();
-  });
+  prepare_and_render_board();
 
   document.addEventListener("mousedown", function (): void {
     global_state.mouse_down = true;
@@ -135,5 +134,27 @@ window.onload = function (): void {
         global_state.brush_color = brushes.erase;
       } break;
     }
+  });
+
+  document.getElementById("download-btn")!.addEventListener("click", function (): void {
+    const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+
+    const canvas_image = document.createElement("canvas") as HTMLCanvasElement;
+    canvas_image.width = canvas.width;
+    canvas_image.height = canvas.height;
+
+    const canvas_context = canvas_image.getContext("2d") as CanvasRenderingContext2D;
+
+    for (let element of global_state.queue) {
+      canvas_context.fillStyle = element.color;
+      canvas_context.fillRect(element.pos.x * global_state.res.x, element.pos.y * global_state.res.y,
+        global_state.res.x, global_state.res.y);
+    }
+
+    const link = document.createElement("a") as HTMLAnchorElement;
+
+    link.href = canvas_image.toDataURL();
+    link.download = `TS_Paint-${guid()}.png`;
+    link.click();
   });
 }

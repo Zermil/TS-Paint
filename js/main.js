@@ -38,9 +38,24 @@ function update_queue() {
         });
     }
 }
-function render_board(canvas, context) {
+function prepare_and_render_board() {
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    const colors = ["#828282", "#C5D6D8"];
+    canvas.addEventListener("mousemove", function (e) {
+        const bounding = this.getBoundingClientRect();
+        global_state.mouse_pos = {
+            x: Math.floor((e.clientX - bounding.left) / global_state.res.x),
+            y: Math.floor((e.clientY - bounding.top) / global_state.res.y)
+        };
+        if (global_state.mouse_down) {
+            update_queue();
+        }
+    });
+    canvas.addEventListener("click", function () {
+        update_queue();
+    });
     function frame() {
-        const colors = ["#828282", "#C5D6D8"];
         for (let i = 0; i < canvas.height / global_state.res.x; ++i) {
             for (let j = 0; j < canvas.width / global_state.res.y; ++j) {
                 context.fillStyle = colors[(j + i) & 1];
@@ -58,22 +73,7 @@ function render_board(canvas, context) {
     frame();
 }
 window.onload = function () {
-    const canvas = document.getElementById("canvas");
-    const context = canvas.getContext("2d");
-    render_board(canvas, context);
-    canvas.addEventListener("mousemove", function (e) {
-        const bounding = this.getBoundingClientRect();
-        global_state.mouse_pos = {
-            x: Math.floor((e.clientX - bounding.left) / global_state.res.x),
-            y: Math.floor((e.clientY - bounding.top) / global_state.res.y)
-        };
-        if (global_state.mouse_down) {
-            update_queue();
-        }
-    });
-    canvas.addEventListener("click", function () {
-        update_queue();
-    });
+    prepare_and_render_board();
     document.addEventListener("mousedown", function () {
         global_state.mouse_down = true;
     });
@@ -98,5 +98,20 @@ window.onload = function () {
                 }
                 break;
         }
+    });
+    document.getElementById("download-btn").addEventListener("click", function () {
+        const canvas = document.getElementById("canvas");
+        const canvas_image = document.createElement("canvas");
+        canvas_image.width = canvas.width;
+        canvas_image.height = canvas.height;
+        const canvas_context = canvas_image.getContext("2d");
+        for (let element of global_state.queue) {
+            canvas_context.fillStyle = element.color;
+            canvas_context.fillRect(element.pos.x * global_state.res.x, element.pos.y * global_state.res.y, global_state.res.x, global_state.res.y);
+        }
+        const link = document.createElement("a");
+        link.href = canvas_image.toDataURL();
+        link.download = `TS_Paint-${guid()}.png`;
+        link.click();
     });
 };
